@@ -12,7 +12,7 @@ namespace PowerBall
         static void Main(string[] args)
         {
             List<WinningNumber> winningNumbers = new List<WinningNumber>();
-            using (var sr = new StreamReader("/users/p/documents/powerball-winning-numbers.txt"))
+            using (var sr = new StreamReader("powerball-winning-numbers.txt"))
             {
                 sr.ReadLine(); // skip the column header line
                 string line;
