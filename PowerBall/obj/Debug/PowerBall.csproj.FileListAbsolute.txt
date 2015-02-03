@@ -1,0 +1,6 @@
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\bin\Debug\PowerBall.exe.config
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\bin\Debug\PowerBall.exe
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\bin\Debug\PowerBall.pdb
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\obj\Debug\PowerBall.csprojResolveAssemblyReference.cache
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\obj\Debug\PowerBall.exe
+c:\users\p\documents\visual studio 2013\Projects\PowerBall\PowerBall\obj\Debug\PowerBall.pdb
