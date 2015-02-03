@@ -31,6 +31,13 @@ namespace PowerBall
                 }
                 
             }
+
+            var result = winningNumbers.GroupBy(wn => wn.RedBall).OrderByDescending(g => g.Count());
+            int count = 1;
+            foreach (var group in result)
+            {
+                Console.WriteLine(string.Format("{2}. RedBall {0} occurred {1} times", group.Key, group.Count(), count++));
+            }
         }
     }
 
