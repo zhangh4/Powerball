@@ -11,6 +11,9 @@ namespace PowerBall
     {
         static void Main(string[] args)
         {
+            List<short> possilbeWhiteBalls = Enumerable.Range(1, 59).Select(o => (short)o).ToList();
+            List<short> possilbeRedBalls = Enumerable.Range(1, 35).Select(o => (short)o).ToList();
+
             List<WinningNumber> winningNumbers = new List<WinningNumber>();
             using (var sr = new StreamReader("powerball-winning-numbers.txt"))
             {
@@ -32,11 +35,19 @@ namespace PowerBall
                 
             }
 
-            var result = winningNumbers.GroupBy(wn => wn.RedBall).OrderByDescending(g => g.Count());
+            var countByRedBall = winningNumbers.GroupBy(wn => wn.RedBall);
+//            var countByRedBall = winningNumbers.GroupBy(wn => wn.RedBall).OrderByDescending(g => g.Count());
+
+            var query =
+                from possbileNumber in possilbeRedBalls
+                join winningNumberGroup in countByRedBall on possbileNumber equals winningNumberGroup.Key into ps
+                from p in ps.DefaultIfEmpty()
+                select new {Number = possbileNumber, Count = p.Count()};
+
             int count = 1;
-            foreach (var group in result)
+            foreach (var redballCount in query.OrderByDescending(o => o.Count))
             {
-                Console.WriteLine(string.Format("{2}. RedBall {0} occurred {1} times", group.Key, group.Count(), count++));
+                Console.WriteLine(string.Format("{2}. RedBall {0} occurred {1} times", redballCount.Number, redballCount.Count, count++));
             }
         }
     }
