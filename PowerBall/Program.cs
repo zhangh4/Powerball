@@ -14,7 +14,7 @@ namespace PowerBall
             List<short> possilbeWhiteBalls = Enumerable.Range(1, 59).Select(o => (short)o).ToList();
             List<short> possilbeRedBalls = Enumerable.Range(1, 35).Select(o => (short)o).ToList();
 
-            List<WinningNumber> winningNumbers = new List<WinningNumber>();
+            List<Ticket> winningNumbers = new List<Ticket>();
             using (var sr = new StreamReader("powerball-winning-numbers.txt"))
             {
                 sr.ReadLine(); // skip the column header line
@@ -23,7 +23,7 @@ namespace PowerBall
                 {
                     Console.WriteLine(line);
                     var parts = line.Split(new []{"  "}, StringSplitOptions.None);
-                    var winningNumber = new WinningNumber()
+                    var winningNumber = new Ticket()
                     {
                         Date = DateTime.Parse(parts[0]),
                         WhiteBalls = new HashSet<short>(parts.Skip(1).Take(5).Select(short.Parse)),
@@ -52,7 +52,7 @@ namespace PowerBall
         }
     }
 
-    class WinningNumber
+    class Ticket
     {
         public DateTime Date { get; set; }
         public HashSet<short> WhiteBalls { get; set; }
@@ -65,5 +65,51 @@ namespace PowerBall
                 "(" + WhiteBalls.Aggregate(string.Empty, (result, number) => result + " " + number) + ")", 
                 RedBall);
         }
+
+        public int DeterminePrize(Ticket winningNumber)
+        {
+            if (winningNumber == null) throw new ArgumentNullException("winningNumber");
+
+            var countOfWhiteMatches = winningNumber.WhiteBalls.Intersect(WhiteBalls).Count();
+
+            if (winningNumber.RedBall == RedBall)
+            {
+                switch (countOfWhiteMatches)
+                {
+                    case 0:
+                        return (int) Prize.RedOnly;
+                    case 1:
+                        return (int) Prize.RedPlusOneWhite;
+                    case 2:
+                        return (int) Prize.RedPlusTwoWhite;
+                    case 3:
+                        return (int) Prize.RedPlusThreeWhite;
+                    case 4:
+                        return (int) Prize.RedPlusFourWhite;
+                    case 5:
+                        return (int) Prize.RedPlusFiveWhite;
+                }
+            }
+            else
+            {
+                switch (countOfWhiteMatches)
+                {
+                    case 3:
+                        return (int)Prize.ThreeWhite;
+                    case 4:
+                        return (int)Prize.FourWhite;
+                    case 5:
+                        return (int)Prize.FiveWhite;
+                }
+            }
+
+            return (int) Prize.None;
+        }
+    }
+
+    enum Prize
+    {
+        None = 0, RedOnly = 4, RedPlusOneWhite = 4, RedPlusTwoWhite = 7, ThreeWhite = 7, RedPlusThreeWhite = 100, FourWhite = 100, 
+        RedPlusFourWhite = 10000, FiveWhite = 1000000, RedPlusFiveWhite = 100000000
     }
 }
