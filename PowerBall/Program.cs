@@ -36,11 +36,12 @@ namespace PowerBall
                 
             }
 
+            var analysisResult = AnalyzeWinningNumbers(winningNumbers);
+            PrintWinningNumbers(analysisResult.Item1, analysisResult.Item2);
+
             ApplyStrategy(winningNumbers, new MostOccurredNumberFirst());
 //            ApplyStrategy(winningNumbers, new RandomStrategy());
 
-//            var analysisResult = AnalyzeWinningNumbers(winningNumbers);
-//            PrintWinningNumbers(analysisResult.Item1, analysisResult.Item2);
         }
 
         private static void ApplyStrategy(List<Ticket> winningNumbers, IStrategy strategy)
@@ -62,7 +63,10 @@ namespace PowerBall
                 {
                     totalTickets++;
                     int prize = ticket.DeterminePrize(winningNumber);
-                    Console.WriteLine("Ticket {0} won {1}", ticket, prize);
+                    if (prize > 0)
+                    {
+                        Console.WriteLine("Ticket {0} won {1}", ticket, prize);
+                    }
                     totalPrize += prize;
                 }
                 Console.WriteLine();
@@ -235,16 +239,20 @@ namespace PowerBall
         public IEnumerable<Ticket> Buy(IEnumerable<Ticket> pastWinners, int numOfTickets)
         {
             var analysisResult = Program.AnalyzeWinningNumbers(pastWinners);
-            var redballNumbersOrderedByOccurence = analysisResult.Item1.OrderByDescending(o => o.Count);
+            var redballNumbersOrderedByOccurence = analysisResult.Item1.OrderBy(o => o.Count);
+//            var redballNumbersOrderedByOccurence = analysisResult.Item1.OrderByDescending(o => o.Count);
+//            var whiteNumbersOrderedByOccurence = analysisResult.Item2.OrderBy(o => o.Count);
             var whiteNumbersOrderedByOccurence = analysisResult.Item2.OrderByDescending(o => o.Count);
 
+            List<short> redballList = redballNumbersOrderedByOccurence.Take(1).Select(o => o.Number).ToList();
             List<IEnumerable<short>> whiteballList = Program.GetPowerSet(whiteNumbersOrderedByOccurence.Take(8).Select(o => o.Number).ToList(), 5).ToList();
             for (int i = 0; i < numOfTickets; i++)
             {
                 yield return new Ticket()
                 {
                     Date = new DateTime(),
-                    RedBall = redballNumbersOrderedByOccurence.First().Number,
+//                    RedBall = redballNumbersOrderedByOccurence.First().Number,
+                    RedBall = redballList[i%redballList.Count],
                     WhiteBalls = new HashSet<short>(whiteballList[i])
                 };
             }
