@@ -36,7 +36,7 @@ namespace PowerBall
                 
             }
 
-            var analysisResult = AnalyzeWinningNumbers(winningNumbers);
+            var analysisResult = AnalyzeWinningNumbers(winningNumbers, winningNumbers);
             PrintWinningNumbers(analysisResult.Item1, analysisResult.Item2);
 
             ApplyStrategy(winningNumbers, new MostOccurredNumberFirst());
@@ -48,9 +48,10 @@ namespace PowerBall
         {
             long totalPrize = 0;
             long totalTickets = 0;
-            foreach (var winningNumber in winningNumbers.Where(o => o.Date >= cutoffDate))
+            foreach (var winningNumber in winningNumbers.Where(o => o.Date >= cutoffDate).OrderBy(o => o.Date))
             {
-                var tickets = strategy.Buy(winningNumbers.Where(o => o.Date < winningNumber.Date), 40).ToList();
+                Ticket number = winningNumber;
+                var tickets = strategy.Buy(winningNumbers.Where(o => o.Date < number.Date), 40).ToList();
 //                tickets[0].RedBall = 34;
 //                tickets[0].WhiteBalls.RemoveWhere(o => true);
 //                tickets[0].WhiteBalls.Add(16);
@@ -74,23 +75,24 @@ namespace PowerBall
             Console.WriteLine(string.Format("Total Prize: {0} for {1} tickets", totalPrize, totalTickets));
         }
 
-        internal static Tuple<IEnumerable<NumberWithStats>, IEnumerable<NumberWithStats>> AnalyzeWinningNumbers(IEnumerable<Ticket> winningNumbers)
+        internal static Tuple<IEnumerable<NumberWithStats>, IEnumerable<NumberWithStats>> AnalyzeWinningNumbers(
+            IEnumerable<Ticket> winningNumbersForRedBall, IEnumerable<Ticket> winningNumbersForWhiteBall)
         {
-            var countByRedBall = winningNumbers.GroupBy(wn => wn.RedBall);
+            var countByRedBall = winningNumbersForRedBall.GroupBy(wn => wn.RedBall);
 //            var countByRedBall = winningNumbers.GroupBy(wn => wn.RedBall).OrderByDescending(g => g.Count());
-            var countByWhiteBall = winningNumbers.SelectMany(t => t.WhiteBalls).GroupBy(o => o);
+            var countByWhiteBall = winningNumbersForWhiteBall.SelectMany(t => t.WhiteBalls).GroupBy(o => o);
 
             var redBallByCount =
                 from possbileNumber in possilbeRedBalls
                 join winningNumberGroup in countByRedBall on possbileNumber equals winningNumberGroup.Key into ps
                 from p in ps.DefaultIfEmpty()
-                select new NumberWithStats(){Number = possbileNumber, Count = p.Count()};
+                select new NumberWithStats(){Number = possbileNumber, Count = p == null ? 0 : p.Count()};
 
             var whiteBallByCount =
                 from possbileNumber in possilbeWhiteBalls
                 join winningNumberGroup in countByWhiteBall on possbileNumber equals winningNumberGroup.Key into ps
                 from p in ps.DefaultIfEmpty()
-                select new NumberWithStats() { Number = possbileNumber, Count = p.Count() };
+                select new NumberWithStats() { Number = possbileNumber, Count = p == null ? 0 : p.Count() };
 
             return new Tuple<IEnumerable<NumberWithStats>, IEnumerable<NumberWithStats>>(redBallByCount.ToList(), whiteBallByCount.ToList());
         }
@@ -138,67 +140,17 @@ namespace PowerBall
                 if (bagOfElementsList.Count == numOfElements) yield return bagOfElementsList;
             }
         }
-    }
 
-    class NumberWithStats
-    {
-        public short Number { get; set; }
-        public int Count { get; set; }
-    }
-
-    class Ticket
-    {
-        public DateTime Date { get; set; }
-        public HashSet<short> WhiteBalls { get; set; }
-        public short RedBall { get; set; }
-
-        public override string ToString()
+        public static HashSet<short> GenerateRandomWhiteBalls(Random drum = null)
         {
-            return string.Format("Date: {0}, WhiteBalls: {1}, RedBall: {2}", 
-                Date, 
-                "(" + WhiteBalls.Aggregate(string.Empty, (result, number) => result + " " + number) + ")", 
-                RedBall);
-        }
-
-        public int DeterminePrize(Ticket winningNumber)
-        {
-            if (winningNumber == null) throw new ArgumentNullException("winningNumber");
-
-            var countOfWhiteMatches = winningNumber.WhiteBalls.Intersect(WhiteBalls).Count();
-
-            if (winningNumber.RedBall == RedBall)
+            if(drum == null) drum = new Random();
+            var whiteBalls = new HashSet<short>();
+            while (whiteBalls.Count < 5)
             {
-                switch (countOfWhiteMatches)
-                {
-                    case 0:
-                        return (int) Prize.RedOnly;
-                    case 1:
-                        return (int) Prize.RedPlusOneWhite;
-                    case 2:
-                        return (int) Prize.RedPlusTwoWhite;
-                    case 3:
-                        return (int) Prize.RedPlusThreeWhite;
-                    case 4:
-                        return (int) Prize.RedPlusFourWhite;
-                    case 5:
-                        return (int) Prize.RedPlusFiveWhite;
-                }
+                whiteBalls.Add((short)drum.Next(1, 60));
             }
-            else
-            {
-                switch (countOfWhiteMatches)
-                {
-                    case 3:
-                        return (int)Prize.ThreeWhite;
-                    case 4:
-                        return (int)Prize.FourWhite;
-                    case 5:
-                        return (int)Prize.FiveWhite;
-                }
-            }
-
-            return (int) Prize.None;
-        }
+            return whiteBalls;
+        } 
     }
 
     enum Prize
@@ -210,52 +162,5 @@ namespace PowerBall
     interface IStrategy
     {
         IEnumerable<Ticket> Buy(IEnumerable<Ticket> pastWinners, int numOfTickets);
-    }
-
-    class RandomStrategy : IStrategy
-    {
-        public IEnumerable<Ticket> Buy(IEnumerable<Ticket> pastWinners, int numOfTickets)
-        {
-            var drum = new Random();
-            for (int i = 0; i < numOfTickets; i++)
-            {
-                HashSet<short> whiteBalls = new HashSet<short>();
-                while (whiteBalls.Count < 5)
-                {
-                    whiteBalls.Add((short) drum.Next(1, 60));
-                }
-                yield return new Ticket()
-                {
-                    Date = new DateTime(),
-                    WhiteBalls = whiteBalls,
-                    RedBall = (short) drum.Next(1, 36)
-                };
-            }
-        }
-    }
-
-    class MostOccurredNumberFirst : IStrategy
-    {
-        public IEnumerable<Ticket> Buy(IEnumerable<Ticket> pastWinners, int numOfTickets)
-        {
-            var analysisResult = Program.AnalyzeWinningNumbers(pastWinners);
-            var redballNumbersOrderedByOccurence = analysisResult.Item1.OrderBy(o => o.Count);
-//            var redballNumbersOrderedByOccurence = analysisResult.Item1.OrderByDescending(o => o.Count);
-//            var whiteNumbersOrderedByOccurence = analysisResult.Item2.OrderBy(o => o.Count);
-            var whiteNumbersOrderedByOccurence = analysisResult.Item2.OrderByDescending(o => o.Count);
-
-            List<short> redballList = redballNumbersOrderedByOccurence.Take(1).Select(o => o.Number).ToList();
-            List<IEnumerable<short>> whiteballList = Program.GetPowerSet(whiteNumbersOrderedByOccurence.Take(8).Select(o => o.Number).ToList(), 5).ToList();
-            for (int i = 0; i < numOfTickets; i++)
-            {
-                yield return new Ticket()
-                {
-                    Date = new DateTime(),
-//                    RedBall = redballNumbersOrderedByOccurence.First().Number,
-                    RedBall = redballList[i%redballList.Count],
-                    WhiteBalls = new HashSet<short>(whiteballList[i])
-                };
-            }
-        }
     }
 }
